@@ -3,7 +3,7 @@ from webob.exc import HTTPUnauthorized, HTTPFound
 import requests
 
 D4SCIENCE_SOCIAL_URL = ('https://socialnetworking1.d4science.org/'
-                        'social-networking-library-ws/rest/2/people/profile')
+                        'social-networking-library-ws/rest/2/users/get-email')
 
 class AuthMiddleware(object):
     def __init__(self, app):
@@ -12,9 +12,8 @@ class AuthMiddleware(object):
     def __call__(self, environ, start_response):
         req = Request(environ)
 
-        user = req.cookies.get('gcube-user', '')
+        user = req.cookies.get('gcube-user-email', '')
         if not user:
-            user = 'pepe@gmail.com'
             token = req.params.get('gcube-token', "")
             if not token:
                 return HTTPUnauthorized()(environ, start_response)
@@ -23,9 +22,11 @@ class AuthMiddleware(object):
                                  params={'gcube-token': token})
                 if r.status_code != 200:
                     return HTTPUnauthorized()(environ, start_response)
-                user = r.json()['result']['username']
+                user = r.json()['result']
                 response = req.get_response(HTTPFound())
-                response.set_cookie('gcube-user', user)
+                # 432000 seconds is 5 days
+                response.set_cookie(name='gcube-user-email', value=user,
+                                    max_age=432000)
                 return response(environ, start_response)
         environ['HTTP_REMOTE_USER'] = user
         return self.app(environ, start_response)
