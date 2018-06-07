@@ -25,7 +25,7 @@ class AuthMiddleware(object):
                 user = r.json()['result']
                 response = req.get_response(HTTPFound())
                 # 432000 seconds is 5 days
-                response.set_cookie(name='gcube-user-email', value=user,
+                response.set_cookie('gcube-user-email', value=user,
                                     max_age=432000)
                 return response(environ, start_response)
         environ['HTTP_REMOTE_USER'] = user
