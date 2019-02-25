@@ -1,3 +1,5 @@
+import os
+
 from webob import Request, Response
 from webob.exc import HTTPUnauthorized, HTTPFound
 import requests
