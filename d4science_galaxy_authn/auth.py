@@ -5,6 +5,8 @@ import requests
 D4SCIENCE_SOCIAL_URL = ('https://socialnetworking1.d4science.org/'
                         'social-networking-library-ws/rest/2/users/get-email')
 
+USER_TOKENS_DIRECTORY = '/etc/d4science/'
+
 class AuthMiddleware(object):
     def __init__(self, app):
         self.app = app
@@ -27,7 +29,13 @@ class AuthMiddleware(object):
                 # 432000 seconds is 5 days
                 response.set_cookie('gcube-user-email', value=user,
                                     max_age=432000)
+                environ['GCUBE_TOKEN'] = token
+                user_info_file = os.path.join(USER_TOKENS_DIRECTORY, user)
+                if not os.path.exists(user_info_file):
+                    with open(user_info_file, 'w') as f:
+                        f.write(token)
                 return response(environ, start_response)
+
         environ['HTTP_REMOTE_USER'] = user
         return self.app(environ, start_response)
 
