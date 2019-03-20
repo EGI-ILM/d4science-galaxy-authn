@@ -1,4 +1,5 @@
 import os
+import logging
 
 from webob import Request, Response
 from webob.exc import HTTPUnauthorized, HTTPFound
@@ -16,7 +17,10 @@ class AuthMiddleware(object):
     def __call__(self, environ, start_response):
         req = Request(environ)
 
+        logging.debug("Receiving request")
         user = req.cookies.get('gcube-user-email', '')
+        logging.debug("User: %s", user)
+        path = os.environ.get('EGI_PROXY_PREFIX', '/')
         if not user:
             token = req.params.get('gcube-token', "")
             if not token:
@@ -29,7 +33,7 @@ class AuthMiddleware(object):
                 user = r.json()['result']
                 response = req.get_response(HTTPFound())
                 # 432000 seconds is 5 days
-                response.set_cookie('gcube-user-email', value=user,
+                response.set_cookie('gcube-user-email', value=user, path=path,
                                     max_age=432000)
                 environ['GCUBE_TOKEN'] = token
                 user_info_file = os.path.join(USER_TOKENS_DIRECTORY, user)
