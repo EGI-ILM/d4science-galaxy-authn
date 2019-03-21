@@ -25,6 +25,7 @@ class AuthMiddleware(object):
         token = req.params.get('gcube-token', '')
         user = None
         if token:
+            logging.debug("Token present, reauthenticating")
             r = requests.get(D4SCIENCE_SOCIAL_URL,
                              params={'gcube-token': token})
             if r.status_code != 200:
@@ -46,6 +47,7 @@ class AuthMiddleware(object):
             if not user:
                 return HTTPUnauthorized()(environ, start_response)
             if not os.path.exists(self.get_user_token_file(user)):
+                logging.debug("Existing cookie, but no token file, failing")
                 # User with cookie but without token !?
                 return HTTPUnauthorized()(environ, start_response)
         environ['HTTP_REMOTE_USER'] = user
