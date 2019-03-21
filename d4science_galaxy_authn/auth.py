@@ -14,34 +14,38 @@ class AuthMiddleware(object):
     def __init__(self, app):
         self.app = app
 
+    def get_user_token_file(self, user):
+        return os.path.join(USER_TOKENS_DIRECTORY, user)
+
     def __call__(self, environ, start_response):
         req = Request(environ)
 
         logging.debug("Receiving request")
-        user = req.cookies.get('gcube-user-email', '')
-        logging.debug("User: %s", user)
         path = os.environ.get('EGI_PROXY_PREFIX', '/')
-        if not user:
-            token = req.params.get('gcube-token', "")
-            if not token:
+        token = req.params.get('gcube-token', '')
+        user = None
+        if token:
+            r = requests.get(D4SCIENCE_SOCIAL_URL,
+                             params={'gcube-token': token})
+            if r.status_code != 200:
                 return HTTPUnauthorized()(environ, start_response)
-            else:
-                r = requests.get(D4SCIENCE_SOCIAL_URL,
-                                 params={'gcube-token': token})
-                if r.status_code != 200:
-                    return HTTPUnauthorized()(environ, start_response)
-                user = r.json()['result']
-                response = req.get_response(HTTPFound())
-                # 432000 seconds is 5 days
-                response.set_cookie('gcube-user-email', value=user, path=path,
-                                    max_age=432000)
-                environ['GCUBE_TOKEN'] = token
-                user_info_file = os.path.join(USER_TOKENS_DIRECTORY, user)
-                if not os.path.exists(user_info_file):
-                    with open(user_info_file, 'w') as f:
-                        f.write(token)
-                return response(environ, start_response)
-
+            user = r.json()['result']
+            response = req.get_response(HTTPFound())
+            # 432000 seconds is 5 days
+            response.set_cookie('gcube-user-email', value=user, path=path,
+                                max_age=432000)
+            environ['GCUBE_TOKEN'] = token
+            user_info_file = self.get_user_token_file(user)
+            if not os.path.exists(user_info_file):
+                with open(user_info_file, 'w') as f:
+                    f.write(token)
+        else:
+            user = req.cookies.get('gcube-user-email', '')
+            if not user:
+                return HTTPUnauthorized()(environ, start_response)
+            if not os.path.exists(self.get_user_token_file(user)):
+                # User with cookie but without token !?
+                return HTTPUnauthorized()(environ, start_response)
         environ['HTTP_REMOTE_USER'] = user
         return self.app(environ, start_response)
 
