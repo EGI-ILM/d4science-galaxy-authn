@@ -39,6 +39,8 @@ class AuthMiddleware(object):
             if not os.path.exists(user_info_file):
                 with open(user_info_file, 'w') as f:
                     f.write(token)
+            # make user we go to the right place
+            return response(environ, start_response)
         else:
             user = req.cookies.get('gcube-user-email', '')
             if not user:
