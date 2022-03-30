@@ -51,6 +51,7 @@ class AuthMiddleware(object):
                 # User with cookie but without token !?
                 return HTTPUnauthorized()(environ, start_response)
         environ['HTTP_REMOTE_USER'] = user
+        environ['ILM'] = "all good"
         return self.app(environ, start_response)
 
 
