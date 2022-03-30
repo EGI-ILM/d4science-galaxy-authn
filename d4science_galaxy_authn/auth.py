@@ -20,7 +20,8 @@ class AuthMiddleware(object):
     def __call__(self, environ, start_response):
         req = Request(environ)
 
-        logging.warning("Receiving request")
+        print("31337")
+        logging.error("Receiving request")
         path = os.environ.get('EGI_PROXY_PREFIX', '/')
         token = req.params.get('gcube-token', '')
         user = None
